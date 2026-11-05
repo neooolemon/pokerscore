@@ -42,10 +42,15 @@
   .cell .money{color:#111;font-weight:700;font-size:14px}
   .cell .invest{color:#555;font-size:11px}
   .cell .wins{color:#0a5c33;font-size:12px}
-  .cell.pot-cell{background:#fffbe6;justify-content:center;gap:3px}
-  .cell.pot-cell .row{font-weight:700;color:#8a4b00;font-size:12px}
-  .cell.sidepot-cell{background:#fffbe6;justify-content:flex-start;font-size:10px}
-  .cell.sidepot-cell .row{text-align:left;font-size:10px;line-height:1.25}
+    .cell.pot-cell{background:#e3f2fd;justify-content:center;gap:4px}
+  .cell.pot-cell .row{font-weight:700;color:#0d47a1;font-size:13px}
+  .cell.pot-cell .row.amount{font-size:20px;color:#0d47a1;font-weight:800}
+  .cell.sidepot-cell{background:#e3f2fd;justify-content:flex-start;overflow-y:auto;overflow-x:hidden;padding:3px 2px}
+  .cell.sidepot-cell .row{text-align:left;line-height:1.25;white-space:normal;word-break:break-all;text-overflow:clip;overflow:visible;color:#0d47a1}
+  .cell.sidepot-cell .row.title{font-weight:700;color:#0d47a1;text-align:center;margin-bottom:2px}
+  .cell.sidepot-cell{background:#e8f5e9;justify-content:flex-start;overflow-y:auto;overflow-x:hidden;padding:3px 2px}
+  .cell.sidepot-cell .row{text-align:left;line-height:1.25;white-space:normal;word-break:break-all;text-overflow:clip;overflow:visible}
+  .cell.sidepot-cell .row.title{font-weight:700;color:#0a5c33;text-align:center;margin-bottom:2px}
 
   .op-area{border-top:2px solid #111;padding-top:10px;display:flex;flex-direction:column;gap:8px}
   .op-current{font-size:15px;font-weight:700;text-align:center;padding:6px;
@@ -724,29 +729,46 @@ function renderGrid() {
       </div>
     `);
   }
+
   const pots = calculatePots();
+
+  // 总奖池格：浅蓝底、深蓝字，金额放大
   cells.push(`
-    <div class="cell pot-cell">
-      <div class="row">总奖池</div>
-      <div class="row" style="font-size:15px">¥${fmt(state.game.pot)}</div>
+    <div class="cell pot-cell" style="background:#e3f2fd">
+      <div class="row" style="font-weight:700;color:#0d47a1;font-size:13px">总奖池</div>
+      <div class="row" style="font-size:20px;color:#0d47a1;font-weight:800">¥${fmt(state.game.pot)}</div>
     </div>
   `);
+
+  // 边池格：浅蓝底、深蓝字
   let sideHtml = '';
+  let sideFontSize = 10;
   if (pots.length > 1) {
+    const count = pots.length - 1;
+    if (count >= 4) sideFontSize = 7;
+    else if (count === 3) sideFontSize = 8;
+    else if (count === 2) sideFontSize = 9;
+    let maxLen = 0;
     for (let i = 1; i < pots.length; i++) {
       const pot = pots[i];
       const seats = pot.eligible.map(s => `玩家${s}`).join(',');
-      sideHtml += `<div class="row">边池${i} ¥${fmt(pot.amount)}（${seats}）</div>`;
+      const str = `边池${i} ¥${fmt(pot.amount)}（${seats}）`;
+      if (str.length > maxLen) maxLen = str.length;
+      sideHtml += `<div class="row" style="color:#0d47a1;text-align:left;line-height:1.25;white-space:normal;word-break:break-all">${str}</div>`;
     }
+    if (maxLen > 16) sideFontSize -= 1;
+    if (maxLen > 24) sideFontSize -= 1;
+    if (sideFontSize < 6) sideFontSize = 6;
   } else {
-    sideHtml = `<div class="row" style="color:#999">无</div>`;
+    sideHtml = `<div class="row" style="color:#0d47a1;text-align:center">无</div>`;
   }
   cells.push(`
-    <div class="cell sidepot-cell">
-      <div class="row" style="font-weight:700;margin-bottom:2px">边池</div>
+    <div class="cell sidepot-cell" style="background:#e3f2fd;overflow-y:auto;overflow-x:hidden;padding:3px 2px;font-size:${sideFontSize}px">
+      <div class="row" style="font-weight:700;color:#0d47a1;text-align:center;margin-bottom:2px;font-size:${Math.min(sideFontSize + 1, 11)}px">边池</div>
       ${sideHtml}
     </div>
   `);
+
   return `<div class="grid">${cells.join('')}</div>`;
 }
 
