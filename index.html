@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>德州小助手</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  html,body{height:100%;background:#fff;color:#111;
+    font:14px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-user-select:none;user-select:none;overflow-x:hidden}
+  #app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom)}
+  .header{text-align:center;font-size:20px;font-weight:700;padding:16px 12px 10px;
+    border-bottom:2px solid #111;letter-spacing:1px}
+  .content{flex:1;padding:10px 12px 12px;display:flex;flex-direction:column;gap:10px}
+
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:14px;font-weight:600;color:#333}
+  .field input{width:100%;padding:12px;font-size:18px;border:1.5px solid #111;border-radius:8px;
+    background:#fff;color:#111;font-family:inherit;outline:none;-webkit-user-select:text;user-select:text}
+  .field input:focus{border-color:#0a7c42}
+  .btn-main{width:100%;padding:16px;font-size:18px;font-weight:700;border:2px solid #111;
+    border-radius:10px;background:#fff;color:#111;font-family:inherit;margin-top:8px}
+  .btn-main:active{background:#f0f0f0}
+
+  .info-bar{display:flex;justify-content:space-around;padding:10px 8px;border-bottom:2px solid #111;
+    font-size:15px;font-weight:600}
+  .info-bar span{white-space:nowrap}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);
+    gap:2px;background:#111;border:2px solid #111;border-radius:8px;overflow:hidden;
+    aspect-ratio:4/3.6;min-height:320px}
+  .cell{background:#fff;padding:5px 3px;display:flex;flex-direction:column;justify-content:space-between;
+    font-size:12px;line-height:1.2;overflow:hidden;text-align:center;min-width:0}
+  .cell.empty{background:#f7f7f7;color:#bbb}
+  .cell .row{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .cell .name{font-weight:700;color:#0a5c33;font-size:13px;cursor:pointer}
+  .cell .name:active{background:#e6f4ec}
+  .cell .pos{color:#8a4b00;font-weight:600;font-size:12px}
+  .cell .money{color:#111;font-weight:700;font-size:14px}
+  .cell .invest{color:#555;font-size:11px}
+  .cell .wins{color:#0a5c33;font-size:12px}
+  .cell.pot-cell{background:#fffbe6;justify-content:center;gap:3px}
+  .cell.pot-cell .row{font-weight:700;color:#8a4b00;font-size:12px}
+  .cell.sidepot-cell{background:#fffbe6;justify-content:flex-start;font-size:10px}
+  .cell.sidepot-cell .row{text-align:left;font-size:10px;line-height:1.25}
+
+  .op-area{border-top:2px solid #111;padding-top:10px;display:flex;flex-direction:column;gap:8px}
+  .op-current{font-size:15px;font-weight:700;text-align:center;padding:6px;
+    background:#f3f3f3;border-radius:8px}
+  .op-current .hl{color:#0a7c42}
+  .input-row{display:flex;gap:8px;align-items:center}
+  .input-row input{flex:1;padding:12px;font-size:18px;border:1.5px solid #111;border-radius:8px;
+    background:#fff;color:#111;font-family:inherit;outline:none;text-align:center;-webkit-user-select:text;user-select:text}
+  .input-row input:focus{border-color:#0a7c42}
+  .btn-row{display:flex;gap:6px}
+  .btn-row .btn{flex:1;padding:13px 0;font-size:15px;font-weight:700;border:2px solid #111;
+    border-radius:8px;background:#fff;color:#111;font-family:inherit;text-align:center}
+  .btn-row .btn:active{background:#f0f0f0}
+  .btn-row .btn:disabled{opacity:.35;pointer-events:none}
+  .btn-row .btn.raise{border-color:#0a5c33;color:#0a5c33}
+  .btn-row .btn.call{border-color:#1a5c9e;color:#1a5c9e}
+  .btn-row .btn.fold{border-color:#b33;color:#b33}
+  .btn-row .btn.allin{border-color:#8a4b00;color:#8a4b00}
+  .btn-row .btn.undo{border-color:#666;color:#666}
+
+  .showdown-box{display:flex;flex-direction:column;gap:10px}
+  .showdown-title{font-size:16px;font-weight:700;text-align:center;padding:8px;
+    background:#f3f3f3;border-radius:8px}
+  .winner-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;
+    border:1.5px solid #111;border-radius:8px;padding:8px}
+  .winner-item{display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid #eee;
+    font-size:15px}
+  .winner-item:last-child{border-bottom:none}
+  .winner-item input[type=checkbox]{width:22px;height:22px;accent-color:#0a7c42}
+  .winner-item label{flex:1;font-weight:600}
+  .btn-pair{display:flex;gap:8px}
+  .btn-pair .btn{flex:1;padding:14px 0;font-size:16px;font-weight:700;border:2px solid #111;
+    border-radius:8px;background:#fff;color:#111;font-family:inherit}
+  .btn-pair .btn:active{background:#f0f0f0}
+  .btn-pair .btn.primary{background:#0a7c42;color:#fff;border-color:#0a7c42}
+  .btn-pair .btn.primary:active{background:#096c3a}
+
+  .settle-list{display:flex;flex-direction:column;gap:8px}
+  .settle-item{border:1.5px solid #111;border-radius:8px;padding:10px;display:flex;
+    flex-direction:column;gap:6px}
+  .settle-item .name-row{display:flex;justify-content:space-between;font-weight:700;font-size:15px}
+  .settle-item .name-row .profit.pos{color:#0a7c42}
+  .settle-item .name-row .profit.neg{color:#b33}
+  .settle-item .refill-row{display:flex;gap:6px;align-items:center}
+  .settle-item .refill-row input{flex:1;padding:10px;font-size:16px;border:1.5px solid #111;
+    border-radius:6px;font-family:inherit;text-align:center;-webkit-user-select:text;user-select:text}
+  .settle-item .refill-row .btn{padding:10px 12px;font-size:14px;font-weight:700;border:1.5px solid #111;
+    border-radius:6px;background:#fff;font-family:inherit;white-space:nowrap}
+  .settle-item .refill-row .btn.leave{border-color:#b33;color:#b33}
+  .settle-item .refill-row .btn.refill{border-color:#0a7c42;color:#0a7c42}
+
+  .stats-title{font-size:20px;font-weight:700;text-align:center;padding:8px 0}
+  .stats-table{width:100%;border-collapse:collapse;border:2px solid #111;border-radius:8px;
+    overflow:hidden;font-size:13px}
+  .stats-table th,.stats-table td{border:1px solid #111;padding:8px 4px;text-align:center}
+  .stats-table th{background:#f3f3f3;font-weight:700;font-size:12px}
+  .stats-table td.pos{color:#0a7c42;font-weight:700}
+  .stats-table td.neg{color:#b33;font-weight:700}
+  .stats-table td.cash{font-weight:700}
+  .stats-table td small{font-size:10px;color:#666}
+  .winner-line{text-align:center;font-size:15px;font-weight:700;padding:10px;
+    background:#fffbe6;border:1.5px solid #111;border-radius:8px}
+  .refill-note{font-size:13px;color:#555;padding:6px 4px;line-height:1.5}
+  .refill-note b{color:#8a4b00}
+
+  .empty-hint{text-align:center;color:#888;padding:30px 10px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header" class="header">德州小助手</div>
+  <div id="content" class="content"></div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const fmt = cents => {
+  const v = cents / 100;
+  if (Number.isInteger(v)) return v.toString();
+  return v.toFixed(1);
+};
+const roundCents = n => Math.round(n);
+const LS_KEY = 'poker_helper_settings_v1';
+
+function saveSettings() {
+  try {
+    const names = {};
+    state.players.forEach(p => { if (p.name) names[p.seat] = p.name; });
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      playerCount: state.settings.playerCount,
+      initialChips: state.settings.initialChips,
+      minBet: state.settings.minBet,
+      names
+    }));
+  } catch (e) {}
+}
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) { return null; }
+}
+
+const state = {
+  screen: 'setup',
+  settings: { playerCount: 4, initialChips: 1000, minBet: 10 },
+  players: [],
+  game: {
+    handNumber: 1, phase: 'preflop', dealerSeat: 1, currentSeat: null,
+    currentBet: 0, pot: 0, actionHistory: []
+  },
+  showdown: { selectedWinners: [] },
+  settlement: { active: false, results: [] }
+};
+
+function getPlayer(seat) { return state.players.find(p => p.seat === seat); }
+function getCurrentPlayer() { return getPlayer(state.game.currentSeat); }
+function activePlayers() { return state.players.filter(p => !p.left); }
+function notFoldedPlayers() { return state.players.filter(p => !p.folded && !p.left); }
+
+function getPositions() {
+  const active = activePlayers();
+  const n = active.length;
+  const positions = {};
+  if (n === 0) return positions;
+  if (n === 2) {
+    const dealer = state.game.dealerSeat;
+    const other = active.find(p => p.seat !== dealer);
+    positions[dealer] = '庄家';
+    if (other) positions[other.seat] = '普通玩家';
+    return positions;
+  }
+  const sorted = active.map(p => p.seat).sort((a, b) => a - b);
+  const dealerIdx = sorted.indexOf(state.game.dealerSeat);
+  if (dealerIdx === -1) {
+    state.game.dealerSeat = sorted[0];
+    return getPositions();
+  }
+  const sbIdx = (dealerIdx + 1) % n;
+  const bbIdx = (dealerIdx + 2) % n;
+  sorted.forEach((seat, i) => {
+    if (i === dealerIdx) positions[seat] = '庄家';
+    else if (i === sbIdx) positions[seat] = '小盲';
+    else if (i === bbIdx) positions[seat] = '大盲';
+    else positions[seat] = '普通玩家';
+  });
+  return positions;
+}
+
+function getFirstActor(phase) {
+  const active = activePlayers();
+  if (active.length === 0) return null;
+  const sorted = active.map(p => p.seat).sort((a, b) => a - b);
+  if (active.length === 2) {
+    if (phase === 'preflop') {
+      const nonDealer = active.find(p => p.seat !== state.game.dealerSeat);
+      return nonDealer ? nonDealer.seat : null;
+    }
+    return state.game.dealerSeat;
+  }
+  if (phase === 'preflop') {
+    const positions = getPositions();
+    const bbSeatStr = Object.keys(positions).find(s => positions[s] === '大盲');
+    if (!bbSeatStr) return sorted[0];
+    const bbIdx = sorted.indexOf(parseInt(bbSeatStr));
+    if (bbIdx === -1) return sorted[0];
+    return sorted[(bbIdx + 1) % sorted.length];
+  }
+  const dealerIdx = sorted.indexOf(state.game.dealerSeat);
+  if (dealerIdx === -1) return sorted[0];
+  return sorted[(dealerIdx + 1) % sorted.length];
+}
+
+function getActingOrder(phase) {
+  const active = activePlayers();
+  if (active.length === 0) return [];
+  const sorted = active.map(p => p.seat).sort((a, b) => a - b);
+  const first = getFirstActor(phase);
+  if (first === null) return sorted;
+  const firstIdx = sorted.indexOf(first);
+  const order = [];
+  for (let i = 0; i < sorted.length; i++) order.push(sorted[(firstIdx + i) % sorted.length]);
+  return order;
+}
+
+function findNextPlayer(fromSeat, phase) {
+  const order = getActingOrder(phase);
+  const startIdx = order.indexOf(fromSeat);
+  if (startIdx === -1) {
+    for (const seat of order) {
+      const p = getPlayer(seat);
+      if (p && !p.folded && !p.allIn && !p.left && !p.actedThisRound) return seat;
+    }
+    return null;
+  }
+  for (let i = 1; i <= order.length; i++) {
+    const seat = order[(startIdx + i) % order.length];
+    const p = getPlayer(seat);
+    if (p && !p.folded && !p.allIn && !p.left && !p.actedThisRound) return seat;
+  }
+  return null;
+}
+
+function saveSnapshot() {
+  const snap = {
+    players: state.players.map(p => ({ ...p })),
+    game: {
+      phase: state.game.phase, currentSeat: state.game.currentSeat,
+      currentBet: state.game.currentBet, pot: state.game.pot
+    }
+  };
+  state.game.actionHistory.push(snap);
+  if (state.game.actionHistory.length > 50) state.game.actionHistory.shift();
+}
+
+function undo() {
+  if (state.game.actionHistory.length === 0) return;
+  const snap = state.game.actionHistory.pop();
+  state.players = snap.players;
+  Object.assign(state.game, snap.game);
+  render();
+}
+
+function startGame() {
+  const count = parseInt(state.settings.playerCount);
+  const init = parseFloat(state.settings.initialChips);
+  const minB = parseFloat(state.settings.minBet);
+  if (!count || count < 2 || count > 10) return alert('人数需在 2～10 之间');
+  if (!init || init <= 0 || !Number.isInteger(init)) return alert('初始金额需为正整数');
+  if (!minB || minB < 1 || minB > 1000 || !Number.isInteger(minB)) return alert('最小投注需为 1～1000 的整数');
+
+  const saved = loadSettings();
+  const names = (saved && saved.names) ? saved.names : {};
+
+  state.players = [];
+  for (let i = 1; i <= count; i++) {
+    state.players.push({
+      seat: i, name: names[i] || '',
+      chips: roundCents(init * 100), initialChips: roundCents(init * 100),
+      refillTotal: 0, wins: 0,
+      folded: false, allIn: false,
+      investedThisHand: 0, investedThisRound: 0,
+      actedThisRound: false, left: false
+    });
+  }
+  state.game = {
+    handNumber: 1, phase: 'preflop', dealerSeat: 1,
+    currentSeat: null, currentBet: 0, pot: 0, actionHistory: []
+  };
+  state.showdown = { selectedWinners: [] };
+  state.settlement = { active: false, results: [] };
+  state.screen = 'game';
+  saveSettings();
+  startHand();
+}
+
+function startHand() {
+  state.players.forEach(p => {
+    p.folded = false; p.allIn = false;
+    p.investedThisHand = 0; p.investedThisRound = 0;
+    p.actedThisRound = false;
+  });
+  state.game.phase = 'preflop';
+  state.game.pot = 0;
+  state.game.currentBet = 0;
+  state.game.actionHistory = [];
+  state.showdown = { selectedWinners: [] };
+  state.settlement = { active: false, results: [] };
+
+  const active = activePlayers();
+  if (active.length === 0) return;
+  if (active.length < 2) { state.screen = 'stats'; render(); return; }
+  if (!active.find(p => p.seat === state.game.dealerSeat)) {
+    state.game.dealerSeat = active[0].seat;
+  }
+
+  const positions = getPositions();
+  const n = active.length;
+  const minBetCents = roundCents(state.settings.minBet * 100);
+
+  if (n === 2) {
+    const dealerSeat = state.game.dealerSeat;
+    const other = active.find(p => p.seat !== dealerSeat);
+    if (!other) { state.screen = 'stats'; render(); return; }
+    const bet = Math.min(minBetCents, other.chips);
+    other.chips -= bet;
+    other.investedThisHand += bet;
+    other.investedThisRound += bet;
+    other.actedThisRound = true;
+    if (other.chips === 0) other.allIn = true;
+    state.game.pot += bet;
+    state.game.currentBet = bet;
+    state.game.currentSeat = dealerSeat;
+  } else {
+    const sbSeatStr = Object.keys(positions).find(s => positions[s] === '小盲');
+    const bbSeatStr = Object.keys(positions).find(s => positions[s] === '大盲');
+    const sb = getPlayer(parseInt(sbSeatStr));
+    const bb = getPlayer(parseInt(bbSeatStr));
+    const sbBet = Math.min(roundCents(minBetCents / 2), sb.chips);
+    const bbBet = Math.min(minBetCents, bb.chips);
+    sb.chips -= sbBet;
+    sb.investedThisHand += sbBet;
+    sb.investedThisRound += sbBet;
+    sb.actedThisRound = false;
+    if (sb.chips === 0) sb.allIn = true;
+    bb.chips -= bbBet;
+    bb.investedThisHand += bbBet;
+    bb.investedThisRound += bbBet;
+    bb.actedThisRound = false;
+    if (bb.chips === 0) bb.allIn = true;
+    state.game.pot += sbBet + bbBet;
+    state.game.currentBet = bbBet;
+    state.game.currentSeat = getFirstActor('preflop');
+  }
+  render();
+}
+
+function canCheck() {
+  if (state.game.phase === 'preflop') return false;
+  const p = getCurrentPlayer();
+  return p && p.investedThisRound === state.game.currentBet;
+}
+
+/* 翻牌前大盲特殊：已投入等于当前注额，点“跟注”等同于过牌结束本轮，不扣筹码 */
+function canBigBlindCheck() {
+  if (state.game.phase !== 'preflop') return false;
+  const p = getCurrentPlayer();
+  if (!p) return false;
+  return state.game.currentBet > 0 &&
+    p.investedThisRound === state.game.currentBet &&
+    p.chips > 0;
+}
+
+function minRaiseTotal() {
+  if (state.game.currentBet > 0) return state.game.currentBet * 2;
+  return roundCents(state.settings.minBet * 100);
+}
+
+function doRaise(amountCents) {
+  const p = getCurrentPlayer();
+  if (!p) return;
+  const minTotal = minRaiseTotal();
+  if (amountCents < minTotal) { alert(`加注到金额至少为 ${fmt(minTotal)}`); return; }
+  const actual = amountCents - p.investedThisRound;
+  if (actual > p.chips) { alert('筹码不足'); return; }
+  if (actual <= 0) return;
+  saveSnapshot();
+  p.chips -= actual;
+  p.investedThisHand += actual;
+  p.investedThisRound += actual;
+  state.game.pot += actual;
+  state.game.currentBet = amountCents;
+  p.actedThisRound = true;
+  if (p.chips === 0) p.allIn = true;
+  state.players.forEach(o => {
+    if (o.seat !== p.seat && !o.folded && !o.allIn && !o.left) o.actedThisRound = false;
+  });
+  afterAction();
+}
+
+function doCall() {
+  const p = getCurrentPlayer();
+  if (!p) return;
+  const toCall = state.game.currentBet - p.investedThisRound;
+  if (toCall <= 0) return;
+  saveSnapshot();
+  const actual = Math.min(toCall, p.chips);
+  p.chips -= actual;
+  p.investedThisHand += actual;
+  p.investedThisRound += actual;
+  state.game.pot += actual;
+  p.actedThisRound = true;
+  if (p.chips === 0) p.allIn = true;
+  afterAction();
+}
+
+/* 翻牌前大盲跟注（check） */
+function doPreflopBigBlindCheck() {
+  const p = getCurrentPlayer();
+  if (!p) return;
+  saveSnapshot();
+  p.actedThisRound = true;
+  afterAction();
+}
+
+function doCheck() {
+  if (!canCheck()) return;
+  saveSnapshot();
+  getCurrentPlayer().actedThisRound = true;
+  afterAction();
+}
+
+function doFold() {
+  const p = getCurrentPlayer();
+  if (!p) return;
+  saveSnapshot();
+  p.folded = true;
+  p.actedThisRound = true;
+  afterAction();
+}
+
+function doAllIn() {
+  const p = getCurrentPlayer();
+  if (!p || p.chips <= 0) return;
+  saveSnapshot();
+  const amount = p.chips;
+  p.chips = 0;
+  p.investedThisHand += amount;
+  p.investedThisRound += amount;
+  state.game.pot += amount;
+  p.allIn = true;
+  p.actedThisRound = true;
+  if (p.investedThisRound > state.game.currentBet) {
+    state.game.currentBet = p.investedThisRound;
+    state.players.forEach(o => {
+      if (o.seat !== p.seat && !o.folded && !o.allIn && !o.left) o.actedThisRound = false;
+    });
+  }
+  afterAction();
+}
+
+function afterAction() {
+  const notFolded = notFoldedPlayers();
+  if (notFolded.length === 1) {
+    state.game.phase = 'showdown';
+    state.showdown.selectedWinners = [notFolded[0].seat];
+    render();
+    return;
+  }
+  if (isRoundComplete()) {
+    advancePhase();
+  } else {
+    const next = findNextPlayer(state.game.currentSeat, state.game.phase);
+    if (next === null) advancePhase();
+    else { state.game.currentSeat = next; render(); }
+  }
+}
+
+function isRoundComplete() {
+  const active = state.players.filter(p => !p.folded && !p.left && !p.allIn);
+  if (active.length === 0) return true;
+  return active.every(p => p.actedThisRound && p.investedThisRound === state.game.currentBet);
+}
+
+function advancePhase() {
+  const phases = ['preflop', 'flop', 'turn', 'river'];
+  const idx = phases.indexOf(state.game.phase);
+  if (idx === phases.length - 1) {
+    state.game.phase = 'showdown';
+    state.showdown.selectedWinners = [];
+    render();
+    return;
+  }
+  state.game.phase = phases[idx + 1];
+  state.players.forEach(p => {
+    if (!p.left) { p.investedThisRound = 0; p.actedThisRound = false; }
+  });
+  state.game.currentBet = 0;
+  const canAct = state.players.filter(p => !p.folded && !p.left && !p.allIn);
+  if (canAct.length === 0) {
+    state.game.phase = 'showdown';
+    state.showdown.selectedWinners = [];
+    render();
+    return;
+  }
+  const first = getFirstActor(state.game.phase);
+  if (first === null) {
+    state.game.phase = 'showdown';
+    state.showdown.selectedWinners = [];
+  } else {
+    state.game.currentSeat = first;
+  }
+  render();
+}
+
+function calculatePots() {
+  const contributors = state.players.filter(p => p.investedThisHand > 0 && !p.left);
+  if (contributors.length === 0) return [];
+  const levels = [...new Set(contributors.map(p => p.investedThisHand))].sort((a, b) => a - b);
+  let prev = 0;
+  const pots = [];
+  for (const level of levels) {
+    const inLevel = contributors.filter(p => p.investedThisHand >= level);
+    const amount = (level - prev) * inLevel.length;
+    const eligible = inLevel.filter(p => !p.folded).map(p => p.seat);
+    if (amount > 0) pots.push({ amount, eligible, level });
+    prev = level;
+  }
+  return pots;
+}
+
+function applyShowdown() {
+  const winners = state.showdown.selectedWinners;
+  if (winners.length === 0) return false;
+  const pots = calculatePots();
+  const winAmounts = {};
+  pots.forEach(pot => {
+    const eligible = winners.filter(seat => pot.eligible.includes(seat));
+    if (eligible.length === 0) {
+      const fallback = state.players.filter(p => pot.eligible.includes(p.seat) && !p.folded && !p.left);
+      if (fallback.length > 0) eligible.push(fallback[0].seat);
+    }
+    if (eligible.length === 0) return;
+    const share = pot.amount / eligible.length;
+    eligible.forEach(seat => {
+      winAmounts[seat] = (winAmounts[seat] || 0) + share;
+    });
+  });
+  state.players.forEach(p => {
+    if (winAmounts[p.seat]) {
+      p.chips += winAmounts[p.seat];
+      p.wins += 1;
+    }
+  });
+  state.game.pot = 0;
+  state.settlement.results = state.players.filter(p => !p.left).map(p => ({
+    seat: p.seat,
+    profit: p.chips - p.initialChips - p.refillTotal
+  }));
+  state.settlement.active = true;
+  return true;
+}
+
+function confirmShowdown() {
+  if (state.showdown.selectedWinners.length === 0) return alert('请至少选择一位胜者');
+  if (!applyShowdown()) return;
+  const zeroPlayers = state.players.filter(p => !p.left && p.chips === 0);
+  if (zeroPlayers.length > 0) {
+    render();
+  } else {
+    state.settlement.active = false;
+    nextHand();
+  }
+}
+
+function nextHand() {
+  const active = activePlayers();
+  if (active.length < 2) { state.screen = 'stats'; render(); return; }
+  const sorted = active.map(p => p.seat).sort((a, b) => a - b);
+  const idx = sorted.indexOf(state.game.dealerSeat);
+  if (idx === -1) state.game.dealerSeat = sorted[0];
+  else state.game.dealerSeat = sorted[(idx + 1) % sorted.length];
+  state.game.handNumber++;
+  startHand();
+}
+
+function doRefill(seat) {
+  const input = document.querySelector(`input[data-refill="${seat}"]`);
+  if (!input) return;
+  const val = parseFloat(input.value);
+  if (!val || val <= 0 || !Number.isInteger(val)) return alert('请输入正整数补给金额');
+  const p = getPlayer(seat);
+  p.chips += roundCents(val * 100);
+  p.refillTotal += roundCents(val * 100);
+  render();
+}
+
+function doLeave(seat) {
+  if (!confirm('确定让该玩家离场吗？离场后将不再参与后续对局。')) return;
+  const p = getPlayer(seat);
+  p.left = true;
+  p.folded = true;
+  render();
+}
+
+function endGame() {
+  if (state.game.phase === 'showdown' && !state.settlement.active) {
+    if (state.showdown.selectedWinners.length === 0) {
+      alert('请先选择胜者');
+      return;
+    }
+    applyShowdown();
+  }
+  state.screen = 'stats';
+  render();
+}
+
+function restart() {
+  const saved = loadSettings();
+  if (saved) {
+    state.settings.playerCount = saved.playerCount || 4;
+    state.settings.initialChips = saved.initialChips || 1000;
+    state.settings.minBet = saved.minBet || 10;
+  }
+  state.players = [];
+  state.screen = 'setup';
+  render();
+}
+
+function editName(seat) {
+  const p = getPlayer(seat);
+  if (!p) return;
+  const newName = prompt('编辑备注名（留空则清除）', p.name || '');
+  if (newName === null) return;
+  p.name = newName.trim().slice(0, 10);
+  saveSettings();
+  render();
+}
+
+function render() {
+  const header = $('#header');
+  const content = $('#content');
+  if (state.screen === 'setup') {
+    header.textContent = '德州小助手';
+    content.innerHTML = renderSetup();
+  } else if (state.screen === 'game') {
+    header.textContent = '德州小助手';
+    content.innerHTML = renderGame();
+  } else if (state.screen === 'stats') {
+    header.textContent = '对局统计';
+    content.innerHTML = renderStats();
+  }
+  bindEvents();
+}
+
+function renderSetup() {
+  const s = state.settings;
+  return `
+    <div class="field">
+      <label>玩家人数（2～10）</label>
+      <input type="number" id="in-playerCount" min="2" max="10" step="1" value="${s.playerCount}">
+    </div>
+    <div class="field">
+      <label>初始金额（整数）</label>
+      <input type="number" id="in-initialChips" min="1" step="1" value="${s.initialChips}">
+    </div>
+    <div class="field">
+      <label>最小投注（1～1000，即大盲）</label>
+      <input type="number" id="in-minBet" min="1" max="1000" step="1" value="${s.minBet}">
+    </div>
+    <button class="btn-main" id="btn-start">开始游戏</button>
+  `;
+}
+
+function renderGame() {
+  if (state.settlement.active) return renderGameTop() + renderSettlement();
+  if (state.game.phase === 'showdown') return renderGameTop() + renderShowdown();
+  return renderGameTop() + renderGrid() + renderOpArea();
+}
+
+function renderGameTop() {
+  const phaseNames = { preflop: '翻牌前', flop: '翻牌', turn: '转牌', river: '河牌', showdown: '结算' };
+  return `
+    <div class="info-bar">
+      <span>第 ${state.game.handNumber} 局</span>
+      <span>轮次 ${phaseNames[state.game.phase] || ''}</span>
+    </div>
+  `;
+}
+
+function renderGrid() {
+  const positions = getPositions();
+  const cells = [];
+  for (let i = 1; i <= 10; i++) {
+    const p = state.players.find(x => x.seat === i);
+    if (!p) { cells.push(`<div class="cell empty"></div>`); continue; }
+    if (p.left) {
+      cells.push(`
+        <div class="cell empty" style="background:#f7f7f7">
+          <div class="row" style="color:#aaa">玩家${p.seat}</div>
+          <div class="row" style="color:#aaa;font-size:12px">已离场</div>
+        </div>
+      `);
+      continue;
+    }
+    const pos = positions[p.seat] || '';
+    cells.push(`
+      <div class="cell">
+        <div class="row">玩家${p.seat}</div>
+        <div class="row name" data-edit-name="${p.seat}">${p.name || '—'}</div>
+        <div class="row wins">胜场 ${p.wins}</div>
+        <div class="row pos">${pos}</div>
+        <div class="row money">¥${fmt(p.chips)}</div>
+        <div class="row invest">本局 ¥${fmt(p.investedThisHand)}</div>
+        <div class="row invest">本轮 ¥${fmt(p.investedThisRound)}</div>
+      </div>
+    `);
+  }
+  const pots = calculatePots();
+  cells.push(`
+    <div class="cell pot-cell">
+      <div class="row">总奖池</div>
+      <div class="row" style="font-size:15px">¥${fmt(state.game.pot)}</div>
+    </div>
+  `);
+  let sideHtml = '';
+  if (pots.length > 1) {
+    for (let i = 1; i < pots.length; i++) {
+      const pot = pots[i];
+      const seats = pot.eligible.map(s => `玩家${s}`).join(',');
+      sideHtml += `<div class="row">边池${i} ¥${fmt(pot.amount)}（${seats}）</div>`;
+    }
+  } else {
+    sideHtml = `<div class="row" style="color:#999">无</div>`;
+  }
+  cells.push(`
+    <div class="cell sidepot-cell">
+      <div class="row" style="font-weight:700;margin-bottom:2px">边池</div>
+      ${sideHtml}
+    </div>
+  `);
+  return `<div class="grid">${cells.join('')}</div>`;
+}
+
+function renderOpArea() {
+  const p = getCurrentPlayer();
+  if (!p) return `<div class="op-area"><div class="empty-hint">等待中…</div></div>`;
+  const toCall = state.game.currentBet - p.investedThisRound;
+  const canCheckNow = canCheck();
+  const bigBlindCheck = canBigBlindCheck();
+  const canCall = toCall > 0 || bigBlindCheck;
+  const defaultRaise = minRaiseTotal();
+  const callLabel = state.game.currentBet > 0
+    ? `跟注（${fmt(state.game.currentBet)}）`
+    : '跟注';
+
+  return `
+    <div class="op-area">
+      <div class="op-current">当前下注：<span class="hl">玩家${p.seat}${p.name ? '（' + p.name + '）' : ''}</span></div>
+      <div class="input-row">
+        <input type="number" id="in-amount" step="0.5" min="${fmt(defaultRaise)}"
+          placeholder="金额（元）" value="${fmt(defaultRaise)}">
+      </div>
+      <div class="btn-row">
+        <button class="btn call" id="btn-call" ${canCall ? '' : 'disabled'}>${callLabel}</button>
+        <button class="btn raise" id="btn-raise">加注</button>
+        <button class="btn" id="btn-check" ${canCheckNow ? '' : 'disabled'}>过牌</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn fold" id="btn-fold">弃牌</button>
+        <button class="btn allin" id="btn-allin">ALL IN</button>
+        <button class="btn undo" id="btn-undo">撤销</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderShowdown() {
+  const players = notFoldedPlayers();
+  if (players.length === 0) {
+    return `<div class="showdown-box"><div class="showdown-title">无人可结算</div></div>`;
+  }
+  return `
+    <div class="showdown-box">
+      <div class="showdown-title">已完成所有轮次下注</div>
+      <div style="text-align:center;font-weight:700;padding:4px">请选择胜者（可多选）</div>
+      <div class="winner-list">
+        ${players.map(p => `
+          <div class="winner-item">
+            <input type="checkbox" id="win-${p.seat}" value="${p.seat}"
+              ${state.showdown.selectedWinners.includes(p.seat) ? 'checked' : ''}>
+            <label for="win-${p.seat}">玩家${p.seat}${p.name ? '（' + p.name + '）' : ''}</label>
+          </div>
+        `).join('')}
+      </div>
+      <div class="btn-pair">
+        <button class="btn primary" id="btn-confirm-showdown">继续对局</button>
+        <button class="btn" id="btn-end-game">结束对局</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSettlement() {
+  const results = state.settlement.results;
+  return `
+    <div class="settle-list">
+      <div style="text-align:center;font-weight:700;font-size:15px;padding:4px">
+        有玩家筹码为 0，请补给或离场
+      </div>
+      ${results.map(r => {
+        const p = getPlayer(r.seat);
+        if (!p) return '';
+        const profitStr = r.profit >= 0 ? '+' + fmt(r.profit) : '−' + fmt(Math.abs(r.profit));
+        return `
+          <div class="settle-item">
+            <div class="name-row">
+              <span>玩家${p.seat}${p.name ? '（' + p.name + '）' : ''}</span>
+              <span class="profit ${r.profit >= 0 ? 'pos' : 'neg'}">${profitStr}</span>
+            </div>
+            <div class="name-row" style="font-weight:400;font-size:13px;color:#555">
+              <span>当前现金 ¥${fmt(p.chips)}</span>
+              <span>胜场 ${p.wins}</span>
+            </div>
+            ${p.chips === 0 ? `
+              <div class="refill-row">
+                <input type="number" data-refill="${p.seat}" placeholder="补给金额（整数）" min="1" step="1">
+                <button class="btn refill" data-refill-btn="${p.seat}">补给</button>
+                <button class="btn leave" data-leave-btn="${p.seat}">离场</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('')}
+      <div class="btn-pair" style="margin-top:8px">
+        <button class="btn primary" id="btn-next-hand">继续对局</button>
+        <button class="btn" id="btn-end-game-2">结束统计</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderStats() {
+  const all = state.players.slice().sort((a, b) => a.seat - b.seat);
+  let maxCash = -Infinity;
+  let winners = [];
+  all.forEach(p => {
+    if (p.chips > maxCash) { maxCash = p.chips; winners = [p.seat]; }
+    else if (p.chips === maxCash) winners.push(p.seat);
+  });
+  const refillNotes = all.filter(p => p.refillTotal > 0).map(p =>
+    `玩家${p.seat}${p.name ? '（' + p.name + '）' : ''}，增补金额 ¥${fmt(p.refillTotal)}`
+  );
+  return `
+    <div class="stats-title">对局统计</div>
+    <table class="stats-table">
+      <thead>
+        <tr><th>玩家</th><th>现金</th><th>盈利</th><th>胜场</th></tr>
+      </thead>
+      <tbody>
+        ${all.map(p => {
+          const profit = p.chips - p.initialChips - p.refillTotal;
+          return `
+            <tr>
+              <td>玩家${p.seat}${p.name ? '<br><small>' + p.name + '</small>' : ''}</td>
+              <td class="cash">¥${fmt(p.chips)}</td>
+              <td class="${profit >= 0 ? 'pos' : 'neg'}">${profit >= 0 ? '+' : '−'}¥${fmt(Math.abs(profit))}</td>
+              <td>${p.wins}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+    <div class="winner-line">
+      本场胜者：${winners.map(s => {
+        const p = getPlayer(s);
+        return `玩家${s}${p.name ? '（' + p.name + '）' : ''}`;
+      }).join('、')}
+    </div>
+    ${refillNotes.length > 0 ? `
+      <div class="refill-note">
+        ${refillNotes.map(n => `<div>${n}</div>`).join('')}
+      </div>
+    ` : ''}
+    <button class="btn-main" id="btn-restart">重新开始</button>
+  `;
+}
+
+function bindEvents() {
+  const startBtn = $('#btn-start');
+  if (startBtn) {
+    startBtn.onclick = () => {
+      state.settings.playerCount = parseInt($('#in-playerCount').value);
+      state.settings.initialChips = parseInt($('#in-initialChips').value);
+      state.settings.minBet = parseInt($('#in-minBet').value);
+      startGame();
+    };
+  }
+  const raiseBtn = $('#btn-raise');
+  if (raiseBtn) {
+    raiseBtn.onclick = () => {
+      const val = parseFloat($('#in-amount').value);
+      if (!val || val <= 0) return alert('请输入有效金额');
+      doRaise(roundCents(val * 100));
+    };
+  }
+  const callBtn = $('#btn-call');
+  if (callBtn) {
+    callBtn.onclick = () => {
+      const p = getCurrentPlayer();
+      if (!p) return;
+      const toCall = state.game.currentBet - p.investedThisRound;
+      if (toCall <= 0) {
+        // 翻牌前大盲跟注 = check，不扣筹码直接结束本轮
+        if (canBigBlindCheck()) doPreflopBigBlindCheck();
+        return;
+      }
+      doCall();
+    };
+  }
+  const checkBtn = $('#btn-check');
+  if (checkBtn) checkBtn.onclick = doCheck;
+  const foldBtn = $('#btn-fold');
+  if (foldBtn) foldBtn.onclick = doFold;
+  const allinBtn = $('#btn-allin');
+  if (allinBtn) allinBtn.onclick = doAllIn;
+  const undoBtn = $('#btn-undo');
+  if (undoBtn) undoBtn.onclick = undo;
+
+  document.querySelectorAll('[data-edit-name]').forEach(el => {
+    el.onclick = () => editName(parseInt(el.dataset.editName));
+  });
+
+  document.querySelectorAll('.winner-item input[type=checkbox]').forEach(cb => {
+    cb.onchange = () => {
+      state.showdown.selectedWinners = Array.from(
+        document.querySelectorAll('.winner-item input[type=checkbox]:checked')
+      ).map(x => parseInt(x.value));
+    };
+  });
+
+  const confirmBtn = $('#btn-confirm-showdown');
+  if (confirmBtn) confirmBtn.onclick = confirmShowdown;
+  const endGameBtn = $('#btn-end-game');
+  if (endGameBtn) endGameBtn.onclick = endGame;
+
+  document.querySelectorAll('[data-refill-btn]').forEach(btn => {
+    btn.onclick = () => doRefill(parseInt(btn.dataset.refillBtn));
+  });
+  document.querySelectorAll('[data-leave-btn]').forEach(btn => {
+    btn.onclick = () => doLeave(parseInt(btn.dataset.leaveBtn));
+  });
+
+  const nextHandBtn = $('#btn-next-hand');
+  if (nextHandBtn) {
+    nextHandBtn.onclick = () => {
+      const zero = state.players.filter(p => !p.left && p.chips === 0);
+      if (zero.length > 0) { alert('还有玩家筹码为 0，请先补给或让他们离场'); return; }
+      state.settlement.active = false;
+      nextHand();
+    };
+  }
+  const endGameBtn2 = $('#btn-end-game-2');
+  if (endGameBtn2) endGameBtn2.onclick = endGame;
+
+  const restartBtn = $('#btn-restart');
+  if (restartBtn) restartBtn.onclick = restart;
+}
+
+(function init() {
+  const saved = loadSettings();
+  if (saved) {
+    state.settings.playerCount = saved.playerCount || 4;
+    state.settings.initialChips = saved.initialChips || 1000;
+    state.settings.minBet = saved.minBet || 10;
+  }
+  render();
+})();
+</script>
+</body>
+</html>
