@@ -204,24 +204,44 @@ function getFirstActor(phase) {
   const active = activePlayers();
   if (active.length === 0) return null;
   const sorted = active.map(p => p.seat).sort((a, b) => a - b);
+  const canAct = seat => {
+    const p = getPlayer(seat);
+    return p && !p.folded && !p.left && !p.allIn;
+  };
+
+  let startSeat = null;
   if (active.length === 2) {
     if (phase === 'preflop') {
       const nonDealer = active.find(p => p.seat !== state.game.dealerSeat);
-      return nonDealer ? nonDealer.seat : null;
+      startSeat = nonDealer ? nonDealer.seat : state.game.dealerSeat;
+    } else {
+      startSeat = state.game.dealerSeat;
     }
-    return state.game.dealerSeat;
+  } else {
+    if (phase === 'preflop') {
+      const positions = getPositions();
+      const bbSeatStr = Object.keys(positions).find(s => positions[s] === '大盲');
+      if (bbSeatStr) {
+        const bbIdx = sorted.indexOf(parseInt(bbSeatStr));
+        if (bbIdx !== -1) startSeat = sorted[(bbIdx + 1) % sorted.length];
+      }
+    } else {
+      const dealerIdx = sorted.indexOf(state.game.dealerSeat);
+      if (dealerIdx !== -1) startSeat = sorted[(dealerIdx + 1) % sorted.length];
+    }
+    if (startSeat === null) startSeat = sorted[0];
   }
-  if (phase === 'preflop') {
-    const positions = getPositions();
-    const bbSeatStr = Object.keys(positions).find(s => positions[s] === '大盲');
-    if (!bbSeatStr) return sorted[0];
-    const bbIdx = sorted.indexOf(parseInt(bbSeatStr));
-    if (bbIdx === -1) return sorted[0];
-    return sorted[(bbIdx + 1) % sorted.length];
+
+  const startIdx = sorted.indexOf(startSeat);
+  if (startIdx === -1) {
+    for (const seat of sorted) if (canAct(seat)) return seat;
+    return null;
   }
-  const dealerIdx = sorted.indexOf(state.game.dealerSeat);
-  if (dealerIdx === -1) return sorted[0];
-  return sorted[(dealerIdx + 1) % sorted.length];
+  for (let i = 0; i < sorted.length; i++) {
+    const seat = sorted[(startIdx + i) % sorted.length];
+    if (canAct(seat)) return seat;
+  }
+  return null;
 }
 
 function getActingOrder(phase) {
@@ -510,7 +530,7 @@ function advancePhase() {
   });
   state.game.currentBet = 0;
   const canAct = state.players.filter(p => !p.folded && !p.left && !p.allIn);
-  if (canAct.length === 0) {
+  if (canAct.length <= 1) {
     state.game.phase = 'showdown';
     state.showdown.selectedWinners = [];
     render();
@@ -681,6 +701,9 @@ function renderSetup() {
       <label>最小投注（1～1000，即大盲）</label>
       <input type="number" id="in-minBet" min="1" max="1000" step="1" value="${s.minBet}">
     </div>
+    <div style="font-size:13px;color:#666;line-height:1.6;padding:2px 4px 6px">
+      提示：数据页中玩家编号下方的横线可以点击修改备注名
+    </div>
     <button class="btn-main" id="btn-start">开始游戏</button>
   `;
 }
@@ -724,7 +747,7 @@ function renderGrid() {
         <div class="row wins">胜场 ${p.wins}</div>
         <div class="row pos">${pos}</div>
         <div class="row money">¥${fmt(p.chips)}</div>
-        <div class="row invest">本局 ¥${fmt(p.investedThisHand)}</div>
+        <div class="row invest">本局 ¥${fmt(p.investedThisHand)}${p.folded ? '（弃）' : ''}</div>
         <div class="row invest">本轮 ¥${fmt(p.investedThisRound)}</div>
       </div>
     `);
